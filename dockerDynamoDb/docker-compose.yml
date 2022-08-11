@@ -1,0 +1,64 @@
+version: "3.8"
+services:
+  app:
+    build: .
+    ports:
+      - "80:8000"
+    volumes:
+      - .:/app
+    command: chalice local --host=0.0.0.0 --port=8000
+    tty: true
+    stdin_open: true
+    working_dir: "${APP_PATH}"
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_DEFAULT_REGION=${AWS_DEFAULT_REGION}
+
+# added for dynamoDB
+  # dynamodb:
+  #   image: amazon/dynamodb-local
+  #   command: -jar DynamoDBLocal.jar -sharedDb -dbPath . -optimizeDbBeforeStartup
+  #   volumes:
+  #       - dynamodb:/home/dynamodblocal
+  #   ports:
+  #       - 81:8001
+
+  # awscli:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile-awscli
+  #     entrypoint: [""]
+  #     tty: true
+  #     command:
+  #       - /bin/sh
+  #     volumes:
+  #       - ./bin:/usr/app
+
+  # aws-cli-container:
+  #   build: ./aws-cli
+  #   container_name: awscli-container
+  #   volumes:
+  #     - .:/workdir
+  #   env_file:
+  #     - .env
+  #   environment:
+  #     AWS_DEFAULT_REGION: ap-northeast-1
+  #     AWS_DEFAULT_OUTPUT: json
+  dynamodb:
+    image: amazon/dynamodb-local
+    container_name: dynamodb
+    ports:
+      - 8000:8000
+    command: -jar DynamoDBLocal.jar -dbPath /data -sharedDb
+    volumes:
+      - $PWD/dynamodb/data:/data
+  dynamodb-admin:
+    container_name: dynamodb-admin
+    image: aaronshaf/dynamodb-admin:latest
+    environment:
+      - DYNAMO_ENDPOINT=dynamodb:8000
+    ports:
+      - 8001:8001
+    depends_on:
+      - dynamodb
